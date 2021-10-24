@@ -16,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
   };
   Item.init({
     ChecklistId: {
-      type: Sequelize.INTEGER,
+      type: DataTypes.INTEGER,
       references: {
         model: 'Checklists',
         key: 'id'

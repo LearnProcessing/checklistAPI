@@ -1,26 +1,23 @@
-const env = process.env.NODE_ENV
+require('dotenv').config();
 
-if(env === 'development' || env === 'test'){
-  require('dotenv').config();
-}
 
 module.exports ={
   "development": {
-    "username": process.env.PG_USERNAME,
-    "password": process.env.PG_PASSWORD,
+    "username": "ayudyatriastika",
+    "password": "postgres",
     "database": "checklist_dev",
     "host": "localhost",
     "dialect": "postgres"
   },
   "test": {
-    "username": process.env.PG_USERNAME,
+    "username": "ayudyatriastika",
     "password": process.env.PG_PASSWORD,
     "database": "checklist_test",
     "host": "localhost",
     "dialect": "postgres"
   },
   "production": {
-    "username": process.env.PG_USERNAME,
+    "username": "ayudyatriastika",
     "password": process.env.PG_PASSWORD,
     "database": "checklist_production",
     "host": "localhost",
