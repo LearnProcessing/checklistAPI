@@ -1,3 +1,57 @@
+function checklistQueryParser(params) {
+  const { include, checklistId } = params
+  if(include === 'items') {
+    return `
+      SELECT c.*, i.items
+      FROM "Checklists" AS c
+      INNER JOIN 
+        (
+          SELECT 
+            "ChecklistId", 
+            string_agg(description, ', ') AS items
+          FROM "Items"
+          GROUP BY "ChecklistId"
+        ) AS i
+      ON i."ChecklistId" = c.id
+      WHERE c.id = ${checklistId}
+    `
+  }
+  return `
+    SELECT * FROM "Checklists"
+    WHERE id = ${checklistId}
+  `
+}
+
+function checklistsQueryParser(params) {
+  const { include, page_limit, page_offset } = params
+  const limitClause = page_limit? `LIMIT ${page_limit}`: ""
+  const offsetClause = page_offset? `OFFSET ${page_offset}` : ""
+
+  if(include === 'items') {
+    return `
+      SELECT c.*, i.items
+      FROM "Checklists" AS c
+      INNER JOIN 
+        (
+          SELECT 
+            "ChecklistId", 
+            string_agg(description, ', ') AS items
+          FROM "Items"
+          GROUP BY "ChecklistId"
+        ) AS i
+      ON i."ChecklistId" = c.id
+      ${limitClause}
+      ${offsetClause}
+    `
+  }
+  return `
+    SELECT * FROM "Checklists"
+    ${limitClause}
+    ${offsetClause}
+
+  `
+}
+
 function createChecklistParser(params) {
   const { object_domain, object_id, description, due, urgency } = params
   return `
@@ -24,17 +78,23 @@ function addItemsParser(params) {
 function updateChecklistParser(params) {
   const { checklistId, object_domain, object_id, description, is_completed, completed_at } = params
   return `
-  UPDATE "Checklists"
-  SET 
-  object_domain = "${object_domain}",
-  object_id = "${object_id}",
-  description = "${description}",
-  is_completed = ${is_completed},
-  completed_at = "${completed_at}"
-  WHERE 
-  id = ${checklistId}
-  RETURNING *
-`
+    UPDATE "Checklists"
+    SET 
+    object_domain = '${object_domain}',
+    object_id = '${object_id}',
+    description = '${description}',
+    is_completed = ${is_completed},
+    completed_at = ${completed_at}
+    WHERE 
+    id = ${checklistId}
+    RETURNING *
+  `
 }
 
-module.exports = { addItemsParser, createChecklistParser, updateChecklistParser }
+module.exports = { 
+  addItemsParser, 
+  createChecklistParser, 
+  updateChecklistParser, 
+  checklistQueryParser,
+  checklistsQueryParser
+}

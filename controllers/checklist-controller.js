@@ -1,59 +1,61 @@
 const { sequelize } = require('../models');
-const { addItemsParser, createChecklistParser, updateChecklistParser } = require('./checklist-query-parser');
+const { 
+  addItemsParser, 
+  createChecklistParser, 
+  updateChecklistParser, 
+  checklistQueryParser,
+  checklistsQueryParser
+} = require('./checklist-query-parser');
 
 
 class ChecklistController {
   static async getChecklist(req, res, next) {
     const checklistId = +req.params.checklistId
-    const query = `
-      SELECT * FROM "Checklists"
-      WHERE id = ${checklistId}
-    `
+    const { include } = req.query
+    const checklisQueryParams = { include, checklistId}
     try {
+      const query = checklistQueryParser(checklisQueryParams)
       const checklist = await sequelize.query(query);
+      if (!checklist[0]?.length) {
+        throw { message: "Data Not Found" }
+      }
       const dataParams = {
         type: 'checklists',
         id: checklistId,
-        attributes: checklist[0],
+        attributes: checklist[0][0],
         links: {
           self: `http://${process.env.SERVER_URL}/checklists/${checklistId}`
         }
       }
-
-      res.status(200).json(dataParams)
+      res.status(200).json({ data: dataParams })
     } catch (error) {
-      console.log(error)
+      next(error)
     }
   }
 
   static async getChecklists(req, res, next) {
-    const query = `
-      SELECT * FROM "Checklists"
-    `
+    const { include, page_limit, page_offset } = req.query
+    const queryParams = {
+      include,
+      page_limit,
+      page_offset
+    }
+    const query = checklistsQueryParser(queryParams)
     try {
       const checklists = await sequelize.query(query);
       const params = {
-        meta: {
-          count: 10,
-          total: 100
-        },
-        links: {
-          first: '',
-          last: '',
-          next: '',
-          prev: '',
-        },
         data: checklists[0].map(checklist => {
+          const id = +checklist.id
           return {
             ...checklist, links: {
-              self: `http://${process.env.SERVER_URL}/checklists/${checklistId}`
+              self: `http://${process.env.SERVER_URL}/checklists/${id}`
             }
           }
         })
       }
       res.status(200).json(params)
     } catch (error) {
-      console.log(error)
+      next(error)
     }
   }
 
@@ -81,35 +83,42 @@ class ChecklistController {
       }
       res.status(201).json(params)
     } catch (error) {
-      console.log(error)
+      next(error)
     }
   }
 
   static async updateChecklist(req, res, next) {
     const checklistId = +req.params.checklistId
-    const { object_domain, object_id, description, is_completed, completed_at } = req.body.attributes
+    const { object_domain, object_id, description, is_completed, completed_at } = req.body.data.attributes
     const params = {
-      checklistId, 
-      object_domain, 
-      object_id, 
-      description, 
-      is_completed, 
+      checklistId,
+      object_domain,
+      object_id,
+      description,
+      is_completed,
       completed_at
     }
     const query = updateChecklistParser(params)
     try {
       const updatedChecklist = await sequelize.query(query)
+      const id = updatedChecklist[0][0]?.id
+      if (!id) {
+        throw { message: 'Data Not Found' }
+      }
       const params = {
         data: {
           type: "checklists",
           id: checklistId,
-          attributes: updatedChecklist[0]
+          attributes: updatedChecklist[0][0],
+          links: {
+            self: `http://${process.env.SERVER_URL}/checklists/${id}`
+          }
         }
       }
-      res.send(200).json(params)
+      res.status(200).json(params)
 
     } catch (error) {
-      console.log(error)
+      next(error)
     }
   }
 
@@ -118,19 +127,23 @@ class ChecklistController {
     try {
       const deleteitemsQuery = `
       DELETE FROM "Items"
-      WHERE ChecklistId = ${checklistId}
+      WHERE "ChecklistId" = ${checklistId}
+      RETURNING *
       `
       const deleteChecklistQuery = `
         DELETE FROM "Checklists"
         WHERE id = ${checklistId}
       `
       await sequelize.transaction(async (transaction) => {
-        await sequelize.query(deleteitemsQuery, { transaction })
-        await sequelize.query(deleteChecklistQuery, { transaction })
-        res.status(204)
+        const items = await sequelize.query(deleteitemsQuery, { transaction })
+        if (!items[0]?.length) throw { message: 'Data Not Found' }
+        const checklist = await sequelize.query(deleteChecklistQuery, { transaction })
+        if (!checklist[0]?.length) throw { message: 'Data Not Found' }
+        return
       })
+      res.status(204).json({})
     } catch (error) {
-      console.log(error)
+      next(error)
     }
   }
 }
