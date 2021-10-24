@@ -1,33 +1,21 @@
 const { sequelize } = require('../models');
+const { getChecklistService, getChecklistsService } = require('../services/checklistService');
 const { 
   addItemsParser, 
   createChecklistParser, 
-  updateChecklistParser, 
-  checklistQueryParser,
-  checklistsQueryParser
-} = require('./checklist-query-parser');
+  updateChecklistParser
+} = require('../services/checklist-query-parser');
 
 
 class ChecklistController {
   static async getChecklist(req, res, next) {
-    const checklistId = +req.params.checklistId
-    const { include } = req.query
-    const checklisQueryParams = { include, checklistId}
+    const getChecklistParams = {
+      include: req.query.include,
+      checklistId: +req.params.checklistId
+    }
     try {
-      const query = checklistQueryParser(checklisQueryParams)
-      const checklist = await sequelize.query(query);
-      if (!checklist[0]?.length) {
-        throw { message: "Data Not Found" }
-      }
-      const dataParams = {
-        type: 'checklists',
-        id: checklistId,
-        attributes: checklist[0][0],
-        links: {
-          self: `http://${process.env.SERVER_URL}/checklists/${checklistId}`
-        }
-      }
-      res.status(200).json({ data: dataParams })
+      const results = await getChecklistService(getChecklistParams)
+      res.status(200).json(results)
     } catch (error) {
       next(error)
     }
@@ -35,25 +23,14 @@ class ChecklistController {
 
   static async getChecklists(req, res, next) {
     const { include, page_limit, page_offset } = req.query
-    const queryParams = {
+    const getChecklistsParams = {
       include,
       page_limit,
       page_offset
     }
-    const query = checklistsQueryParser(queryParams)
     try {
-      const checklists = await sequelize.query(query);
-      const params = {
-        data: checklists[0].map(checklist => {
-          const id = +checklist.id
-          return {
-            ...checklist, links: {
-              self: `http://${process.env.SERVER_URL}/checklists/${id}`
-            }
-          }
-        })
-      }
-      res.status(200).json(params)
+      const results = await getChecklistsService(getChecklistsParams)
+      res.status(200).json(results)
     } catch (error) {
       next(error)
     }
@@ -78,7 +55,7 @@ class ChecklistController {
         id: checklistId,
         attributes: createdChecklist[0][0],
         links: {
-          self: `http://${process.env.SERVER_URL}/checklists/${checklistId}`
+          self: `${process.env.SERVER_URL}/checklists/${checklistId}`
         }
       }
       res.status(201).json(params)
@@ -111,7 +88,7 @@ class ChecklistController {
           id: checklistId,
           attributes: updatedChecklist[0][0],
           links: {
-            self: `http://${process.env.SERVER_URL}/checklists/${id}`
+            self: `${process.env.SERVER_URL}/checklists/${id}`
           }
         }
       }
