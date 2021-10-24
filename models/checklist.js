@@ -14,7 +14,12 @@ module.exports = (sequelize, DataTypes) => {
       Checklist.hasMany(models.Item)
     }
   };
-  Checklist.init({
+  Checklist.init({  
+    id: {
+      primaryKey: true,
+      autoIncrement: true,
+      type: DataTypes.UUID,
+    },
     object_domain: DataTypes.STRING,
     object_id: DataTypes.STRING,
     description: DataTypes.STRING,
