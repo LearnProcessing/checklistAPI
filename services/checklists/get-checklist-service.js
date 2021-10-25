@@ -3,6 +3,7 @@ const {
   checklistsQueryParser
 } = require("./checklist-query-parser");
 const { sequelize } = require("../../models");
+const { logHistory } = require("../histories");
 
 async function getChecklistService(params) {
   const { checklistId } = params
@@ -18,6 +19,15 @@ async function getChecklistService(params) {
       self: `${process.env.SERVER_URL}/checklists/${checklistId}`
     }
   }
+
+  const loggerParams = {
+    loggable_type: 'checklists', 
+    loggable_id: checklistId, 
+    action: 'getChecklist', 
+    kwuid: checklistId, 
+    value: ''
+  }
+  await logHistory(loggerParams)
   return { data }
 }
 
@@ -61,6 +71,16 @@ async function getChecklistsService(params) {
     },
     data
   }
+
+  const loggerParams = {
+    loggable_type: 'checklists', 
+    loggable_id: null, 
+    action: 'getChecklists', 
+    kwuid: null, 
+    value: ''
+  }
+  await logHistory(loggerParams)
+
   return results
 }
 

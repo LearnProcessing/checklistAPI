@@ -1,11 +1,16 @@
 const router = require('express').Router()
 const ChecklistController = require('../controllers/checklist-controller')
+const HistoryController = require('../controllers/history-controller')
 const ItemController = require('../controllers/item-controller')
 const authorization = require('../middlewares/authorization')
 
 router.use(authorization)
 router.get('/checklists', ChecklistController.getChecklists)
 router.get('/checklists/items', ItemController.getAllItems)
+
+router.get('/checklists/histories', HistoryController.getHistories)
+router.get('/checklists/histories/:historyId', HistoryController.getHistory)
+
 router.get('/checklists/:checklistId', ChecklistController.getChecklist)
 router.get('/checklists/:checklistId/items/:itemId', ItemController.getChecklistItem)
 router.patch('/checklists/:checklistId/items/_bulk', ItemController.updateChecklistItems)
@@ -21,3 +26,4 @@ router.delete('/checklists/:checklistId', ChecklistController.deleteChecklist)
 
 
 module.exports = router
+
