@@ -1,4 +1,5 @@
 const { sequelize } = require("../../models")
+const { logHistory } = require("../histories")
 
 async function deleteChecklistService(params) {
   const { checklistId } = params
@@ -19,7 +20,16 @@ async function deleteChecklistService(params) {
     if (!checklist[0]?.length) throw { message: 'Data Not Found' }
     return
   })
+  const loggerParams = {
+    loggable_type: 'checklists', 
+    loggable_id: checklistId, 
+    action: 'delete', 
+    kwuid: checklistId, 
+    value: ''
+  }
+  await logHistory(loggerParams)
 }
+
 
 module.exports = {
   deleteChecklistService

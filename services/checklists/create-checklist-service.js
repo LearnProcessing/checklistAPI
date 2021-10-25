@@ -1,4 +1,5 @@
 const { sequelize } = require("../../models")
+const { logHistory } = require("../histories")
 const { createChecklistParser, addItemsParser } = require("./checklist-query-parser")
 
 async function createChecklistService(params) {
@@ -22,6 +23,15 @@ async function createChecklistService(params) {
       self: `${process.env.SERVER_URL}/checklists/${checklistId}`
     }
   }
+
+  const loggerParams = {
+    loggable_type: 'checklists', 
+    loggable_id: checklistId, 
+    action: 'create', 
+    kwuid: checklistId, 
+    value: ''
+  }
+  await logHistory(loggerParams)
   return { data }
 }
 
