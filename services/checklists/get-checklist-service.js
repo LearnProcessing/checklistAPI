@@ -2,7 +2,7 @@ const {
   checklistQueryParser, 
   checklistsQueryParser
 } = require("./checklist-query-parser");
-const { sequelize } = require("../models");
+const { sequelize } = require("../../models");
 
 async function getChecklistService(params) {
   const { checklistId } = params
@@ -71,6 +71,8 @@ async function getTotalChecklists(params) {
   const total = checklists[0].length
   return total
 }
+
+
 
 module.exports = {
   getChecklistService,

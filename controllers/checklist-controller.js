@@ -1,10 +1,7 @@
-const { sequelize } = require('../models');
-const { getChecklistService, getChecklistsService } = require('../services/checklistService');
-const { 
-  addItemsParser, 
-  createChecklistParser, 
-  updateChecklistParser
-} = require('../services/checklist-query-parser');
+const { getChecklistService, getChecklistsService } = require('../services/checklists/get-checklist-service');
+const { createChecklistService } = require('../services/checklists/create-checklist-service');
+const { updateChecklistService } = require('../services/checklists/update-checklist-service');
+const { deleteChecklistService } = require('../services/checklists/delete-checklist-service');
 
 
 class ChecklistController {
@@ -38,27 +35,18 @@ class ChecklistController {
 
   static async createChecklist(req, res, next) {
     const { object_domain, object_id, due, urgency, description, items, task_id } = req.body.data.attributes
+    const createChecklistParams = {
+      object_domain,
+      object_id,
+      due,
+      urgency,
+      description,
+      items,
+      task_id
+    }
     try {
-      const createChecklistParserParams = {
-        object_domain, object_id, description, due, urgency
-      }
-      const createChecklistQuery = createChecklistParser(createChecklistParserParams)
-      const createdChecklist = await sequelize.query(createChecklistQuery)
-      const checklistId = +createdChecklist[0][0].id
-      const addItemsParserParams = {
-        items, task_id, checklistId
-      }
-      const createItemsQuery = addItemsParser(addItemsParserParams)
-      await sequelize.query(createItemsQuery)
-      const params = {
-        type: "checklists",
-        id: checklistId,
-        attributes: createdChecklist[0][0],
-        links: {
-          self: `${process.env.SERVER_URL}/checklists/${checklistId}`
-        }
-      }
-      res.status(201).json(params)
+      const results = await createChecklistService(createChecklistParams)
+      res.status(201).json(results)
     } catch (error) {
       next(error)
     }
@@ -67,7 +55,7 @@ class ChecklistController {
   static async updateChecklist(req, res, next) {
     const checklistId = +req.params.checklistId
     const { object_domain, object_id, description, is_completed, completed_at } = req.body.data.attributes
-    const params = {
+    const updateChecklistParams = {
       checklistId,
       object_domain,
       object_id,
@@ -75,49 +63,20 @@ class ChecklistController {
       is_completed,
       completed_at
     }
-    const query = updateChecklistParser(params)
     try {
-      const updatedChecklist = await sequelize.query(query)
-      const id = updatedChecklist[0][0]?.id
-      if (!id) {
-        throw { message: 'Data Not Found' }
-      }
-      const params = {
-        data: {
-          type: "checklists",
-          id: checklistId,
-          attributes: updatedChecklist[0][0],
-          links: {
-            self: `${process.env.SERVER_URL}/checklists/${id}`
-          }
-        }
-      }
-      res.status(200).json(params)
-
+      const results = await updateChecklistService(updateChecklistParams)
+      res.status(200).json(results)
     } catch (error) {
       next(error)
     }
   }
 
   static async deleteChecklist(req, res, next) {
-    const checklistId = +req.params.checklistId
+    const params = {
+      checklistId: +req.params.checklistId
+    }
     try {
-      const deleteitemsQuery = `
-      DELETE FROM "Items"
-      WHERE "ChecklistId" = ${checklistId}
-      RETURNING *
-      `
-      const deleteChecklistQuery = `
-        DELETE FROM "Checklists"
-        WHERE id = ${checklistId}
-      `
-      await sequelize.transaction(async (transaction) => {
-        const items = await sequelize.query(deleteitemsQuery, { transaction })
-        if (!items[0]?.length) throw { message: 'Data Not Found' }
-        const checklist = await sequelize.query(deleteChecklistQuery, { transaction })
-        if (!checklist[0]?.length) throw { message: 'Data Not Found' }
-        return
-      })
+      await deleteChecklistService(params)
       res.status(204).json({})
     } catch (error) {
       next(error)
